@@ -4,7 +4,7 @@ import { SignInButton, SignOutButton, SignedIn, SignedOut, UserButton } from "@c
 
 export default function Home() {
   return (
-    <div className="w-4/6 bg-neutral-950">
+    <div className="w-full lg:w-4/6 bg-neutral-950">
       <p className="text-black dark:text-white">Hi there p</p>
       <UserButton afterSignOutUrl="/">
         <p>User</p>
