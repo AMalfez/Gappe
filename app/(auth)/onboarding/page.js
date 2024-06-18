@@ -1,4 +1,5 @@
 import AccountProfile from "@/components/account/AccountProfile";
+import AccountProfileTest from "@/components/account/AccountProfile";
 import {currentUser} from '@clerk/nextjs/server'
 async function Page() {
   const user = await currentUser()
@@ -16,6 +17,7 @@ async function Page() {
     <main className="h-fit flex flex-col justify-center items-center p-20">
         <h1 className="text-3xl font-medium">Onboarding</h1>
         <p>Complete your profile now to use Gappe</p>
+        {/* <AccountProfileTest userData={userData} btnTitle={"Continue"} /> */}
         <AccountProfile userData={userData} btnTitle={"Continue"} />
     </main>
   )

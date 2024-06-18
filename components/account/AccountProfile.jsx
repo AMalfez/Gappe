@@ -1,163 +1,141 @@
 "use client";
 
-import { userSchema } from "@/lib/validations/user";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { isBase64Image } from "@/lib/utils";
 import { useUploadThing } from "@/lib/validations/uploadthing";
+import { PostUser } from "@/lib/actions";
 
-function AccountProfile({ userData, btnTitle }) {
+function AccountProfileTest({ userData, btnTitle }) {
   const { startUpload } = useUploadThing("media");
-  const [files, setFiles] = useState([]);
-  const form = useForm({
-    resolver: yupResolver(userSchema),
-    defaultValues: {
-      profile_photo: userData.image || "",
-      name: userData.name || "",
-      username: userData.username || "",
-      bio: userData.bio || "",
-    },
+  const path = usePathname();
+  const route = useRouter();
+  const [field, setField] = useState({
+    profile_photo: userData.image || "",
+    name: userData.name || "",
+    username: userData.username || "",
+    bio: userData.bio || "",
   });
 
-  async function onSubmit(values) {
-    const blob = values.profile_photo;
+  const handleTextChange = (data, value) => {
+    field[data] = value;
+    setField(field);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const blob = field.profile_photo;
 
     const hasImageChanged = isBase64Image(blob);
     if (hasImageChanged) {
-      const imgRes = await startUpload(files);
+      const imgRes = await startUpload(field.profile_photo);
 
       if (imgRes && imgRes[0].fileUrl) {
-        values.profile_photo = imgRes[0].fileUrl;
+        field.profile_photo = imgRes[0].fileUrl;
       }
     }
-  }
 
-  const handleImage = (e, fieldChange) => {
+    await PostUser({
+      name: field.name,
+      path: path,
+      username: field.username,
+      userId: userData.id,
+      bio: field.bio,
+      image: field.profile_photo,
+    });
+
+    if (path === "/profile/edit") {
+      route.back();
+    } else {
+      route.push("/");
+    }
+  };
+
+  const handleImage = (e) => {
     e.preventDefault();
-
-    const fileReader = new FileReader();
 
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      setFiles(Array.from(e.target.files));
 
       if (!file.type.includes("image")) return;
 
-      fileReader.onload = async (event) => {
-        const imageDataUrl = event.target.result.toString() || "";
-        fieldChange(imageDataUrl);
-      };
-
-      fileReader.readAsDataURL(file);
+      field.profile_photo = URL.createObjectURL(e.target.files[0]);
+      setField(field);
     }
   };
 
   return (
     <div className="bg-neutral-800 p-5 mt-4 rounded-md w-full md:w-3/4 lg:w-3/5">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
+      <form className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <label htmlFor="profile_photo">
+            {field.profile_photo ? (
+              <Image
+                src={field.profile_photo}
+                alt="profile_icon"
+                width={96}
+                height={96}
+                priority
+                className="rounded-full object-contain"
+              />
+            ) : (
+              <Image
+                src="/assets/profile.svg"
+                alt="profile_icon"
+                width={24}
+                height={24}
+                className="object-contain"
+              />
+            )}
+          </label>
+          <input
+            type="file"
             name="profile_photo"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-4">
-                <FormLabel className="account-form_image-label">
-                  {field.value ? (
-                    <Image
-                      src={field.value}
-                      alt="profile_icon"
-                      width={96}
-                      height={96}
-                      priority
-                      className="rounded-full object-contain"
-                    />
-                  ) : (
-                    <Image
-                      src="/assets/profile.svg"
-                      alt="profile_icon"
-                      width={24}
-                      height={24}
-                      className="object-contain"
-                    />
-                  )}
-                </FormLabel>
-                <FormControl className="flex-1 text-base-semibold text-gray-200">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    placeholder="Add profile photo"
-                    onChange={(e) => handleImage(e, field.onChange)}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
+            onChange={handleImage}
+            placeholder="Choose your image"
           />
-          <FormField
-            control={form.control}
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="name">Name</label>
+          <input
+            className="p-2 outline-none rounded text-white"
+            type="text"
             name="name"
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col gap-3">
-                <FormLabel className="font-semibold text-white">Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            placeholder="Name..."
+            onChange={(e) => handleTextChange("name", e.target.value)}
           />
-          <FormField
-            control={form.control}
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="username">Username</label>
+          <input
+            className="p-2 outline-none rounded text-white"
+            type="text"
             name="username"
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col gap-3">
-                <FormLabel className="font-semibold text-white">
-                  Username
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="Username" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            placeholder="Username..."
+            onChange={(e) => handleTextChange("username", e.target.value)}
           />
-          <FormField
-            control={form.control}
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="bio">Bio</label>
+          <textarea
+            className="p-2 outline-none rounded text-white"
+            rows={5}
             name="bio"
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col gap-3">
-                <FormLabel className="font-semibold text-white">Bio</FormLabel>
-                <FormControl>
-                  <Textarea
-                    className="dark:bg-neutral-600 dark:text-neutral-400 dark:border-neutral-800"
-                    row={30}
-                    placeholder="bio"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            placeholder="Bio..."
+            onChange={(e) => handleTextChange("bio", e.target.value)}
           />
-          <Button variant="Account" type="submit">
-            {btnTitle}
-          </Button>
-        </form>
-      </Form>
+        </div>
+        <button
+          className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer rounded p-2"
+          type="submit"
+          onClick={handleSubmit}
+        >
+          {btnTitle}
+        </button>
+      </form>
     </div>
   );
 }
 
-export default AccountProfile;
+export default AccountProfileTest;
