@@ -1,10 +1,10 @@
 import AccountProfile from "@/components/account/AccountProfile";
-import AccountProfileTest from "@/components/account/AccountProfile";
+import { GetUser } from "@/lib/actions";
 import {currentUser} from '@clerk/nextjs/server'
 async function Page() {
   const user = await currentUser()
-  // console.log(user);
-  const userInfo = {};
+  if(!user.id) return router.push('/sign-in');
+  const userInfo = await GetUser(user.id);
   const userData = {
     id:user.id,
     ObjectId:userInfo._id,

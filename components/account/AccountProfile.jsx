@@ -3,12 +3,14 @@
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { isBase64Image } from "@/lib/utils";
 import { useUploadThing } from "@/lib/validations/uploadthing";
 import { PostUser } from "@/lib/actions";
+import { userSchema } from "@/lib/validations/user";
 
-function AccountProfileTest({ userData, btnTitle }) {
+function AccountProfile({ userData, btnTitle }) {
+  const [loading,setLoading] = useState(false);
   const { startUpload } = useUploadThing("media");
+  const [files, setFiles] = useState([]);
   const path = usePathname();
   const route = useRouter();
   const [field, setField] = useState({
@@ -18,24 +20,23 @@ function AccountProfileTest({ userData, btnTitle }) {
     bio: userData.bio || "",
   });
 
-  const handleTextChange = (data, value) => {
-    field[data] = value;
-    setField(field);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const blob = field.profile_photo;
-
-    const hasImageChanged = isBase64Image(blob);
-    if (hasImageChanged) {
-      const imgRes = await startUpload(field.profile_photo);
-
-      if (imgRes && imgRes[0].fileUrl) {
-        field.profile_photo = imgRes[0].fileUrl;
-      }
+    try {
+      await userSchema.validate(field);
+    } catch (error) {
+      console.log(error.toString());
+      return;
     }
 
+    if (files.length > 0) {
+      setLoading(true);
+      const imgRes = await startUpload(files);
+      if (imgRes && imgRes[0].url) {
+        field.profile_photo = imgRes[0].url;
+        setField({ ...field, profile_photo: imgRes[0].url });
+      }
+    }
     await PostUser({
       name: field.name,
       path: path,
@@ -44,7 +45,7 @@ function AccountProfileTest({ userData, btnTitle }) {
       bio: field.bio,
       image: field.profile_photo,
     });
-
+    setLoading(false);
     if (path === "/profile/edit") {
       route.back();
     } else {
@@ -56,12 +57,22 @@ function AccountProfileTest({ userData, btnTitle }) {
     e.preventDefault();
 
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
+      const fileReader = new FileReader();
 
-      if (!file.type.includes("image")) return;
+      if (e.target.files && e.target.files.length > 0) {
+        const file = e.target.files[0];
+        setFiles(Array.from(e.target.files));
+        setField({...field, profile_photo:URL.createObjectURL(e.target.files[0])});
+        if (!file.type.includes("image")) return;
 
-      field.profile_photo = URL.createObjectURL(e.target.files[0]);
-      setField(field);
+        fileReader.onload = async (event) => {
+          const imageDataUrl = event.target.result.toString() || "";
+          console.log(imageDataUrl);
+          // fieldChange(imageDataUrl);
+        };
+
+        fileReader.readAsDataURL(file);
+      }
     }
   };
 
@@ -103,7 +114,10 @@ function AccountProfileTest({ userData, btnTitle }) {
             type="text"
             name="name"
             placeholder="Name..."
-            onChange={(e) => handleTextChange("name", e.target.value)}
+            minLength={3}
+            maxLength={30}
+            value={field.name}
+            onChange={(e) => setField({ ...field, name: e.target.value })}
           />
         </div>
         <div className="flex flex-col">
@@ -112,8 +126,11 @@ function AccountProfileTest({ userData, btnTitle }) {
             className="p-2 outline-none rounded text-white"
             type="text"
             name="username"
+            value={field.username}
+            minLength={3}
+            maxLength={30}
             placeholder="Username..."
-            onChange={(e) => handleTextChange("username", e.target.value)}
+            onChange={(e) => setField({ ...field, username: e.target.value })}
           />
         </div>
         <div className="flex flex-col">
@@ -122,8 +139,11 @@ function AccountProfileTest({ userData, btnTitle }) {
             className="p-2 outline-none rounded text-white"
             rows={5}
             name="bio"
+            value={field.bio}
             placeholder="Bio..."
-            onChange={(e) => handleTextChange("bio", e.target.value)}
+            minLength={3}
+            maxLength={1000}
+            onChange={(e) => setField({ ...field, bio: e.target.value })}
           />
         </div>
         <button
@@ -131,11 +151,11 @@ function AccountProfileTest({ userData, btnTitle }) {
           type="submit"
           onClick={handleSubmit}
         >
-          {btnTitle}
+          {loading?("Loading..."):(btnTitle)}
         </button>
       </form>
     </div>
   );
 }
 
-export default AccountProfileTest;
+export default AccountProfile;
