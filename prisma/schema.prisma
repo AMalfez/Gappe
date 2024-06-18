@@ -15,4 +15,12 @@ model Users {
   name      String
   username  String
   onboarded Boolean @default(false)
+  gappe     Gappa[]
+}
+
+model Gappa{
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  author    Users   @relation(fields: [authorId], references: [id])
+  authorId  String  @db.ObjectId
+  message   String
 }

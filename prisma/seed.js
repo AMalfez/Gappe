@@ -7,13 +7,21 @@ const userData = {
   name: "Test User",
   image: "https://example.com",
   bio: "This is a sample bio",
-  userId: "1234"
+  userId: "125",
 };
+const gappaData = {
+  message: "This is a gappa for example."
+}
 
 async function main() {
   console.log(`Start seeding ...`);
   await prisma.users.create({
-    data: userData,
+    data: {
+      ...userData,
+      gappe: {
+        create:[gappaData]
+      }
+    },
   });
   console.log(`Seeding finished.`);
 }
