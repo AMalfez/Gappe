@@ -25,6 +25,7 @@ function AccountProfile({ userData, btnTitle }) {
     try {
       await userSchema.validate(field);
     } catch (error) {
+      alert(error.toString());
       console.log(error.toString());
       return;
     }
