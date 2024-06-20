@@ -21,6 +21,10 @@ model Users {
 model Gappa{
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   author    Users   @relation(fields: [authorId], references: [id])
-  authorId  String  @db.ObjectId
+  authorId  String  @db.ObjectId 
   message   String
+  community String  @default("")
+  parent    Gappa?  @relation("GappatoGappa", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentId  String? @db.ObjectId
+  children  Gappa[] @relation("GappatoGappa")
 }
